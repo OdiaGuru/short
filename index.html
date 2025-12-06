@@ -1,19 +1,22 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Odia Story Maker</title>
+    <title>Status Image Creator</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Oriya:wght@400;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+        }
+    </script>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f3f4f6;
         }
         
-        /* The specific font for the preview area */
         .odia-font {
             font-family: 'Noto Sans Oriya', sans-serif;
         }
@@ -21,57 +24,69 @@
         /* Aspect Ratio 9:16 Container */
         .phone-preview-container {
             width: 100%;
-            max-width: 360px; /* Base width for preview */
+            max-width: 360px;
             aspect-ratio: 9/16;
             margin: 0 auto;
             position: relative;
             overflow: hidden;
-            background-color: #333;
             box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            background-color: #111;
         }
 
-        /* The actual canvas content */
-        #render-target {
+        /* Background Image Container */
+        #bg-wrapper {
             width: 100%;
             height: 100%;
-            background-size: cover;
-            background-position: center;
-            position: relative;
+            position: absolute;
+            top: 0;
+            left: 0;
+            overflow: hidden;
+        }
+
+        /* The actual background image */
+        #bg-image {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform-origin: center center;
+            /* Default transform: centered */
+            transform: translate(-50%, -50%) scale(1);
+            min-width: 100%;
+            min-height: 100%;
+            object-fit: cover;
+            cursor: move; /* Indicates draggable */
+            user-select: none;
+            pointer-events: auto;
         }
 
         /* Floating Text Box */
         #text-box {
             position: absolute;
             left: 50%;
-            transform: translateX(-50%); /* Center horizontally */
+            transform: translateX(-50%);
             width: 85%;
             background: white;
             border-radius: 12px;
             padding: 24px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-            cursor: move; /* Indicates draggable */
-            user-select: none; /* Prevent text selection while dragging */
-            top: 20%; /* Default top position */
+            cursor: move;
+            user-select: none;
+            top: 20%;
+            z-index: 10;
         }
 
-        /* Custom Scrollbar for inputs */
-        textarea::-webkit-scrollbar {
-            width: 8px;
-        }
-        textarea::-webkit-scrollbar-track {
-            background: #f1f1f1; 
-        }
-        textarea::-webkit-scrollbar-thumb {
-            background: #888; 
-            border-radius: 4px;
-        }
+        /* Custom Scrollbar */
+        textarea::-webkit-scrollbar { width: 8px; }
+        textarea::-webkit-scrollbar-track { background: transparent; }
+        textarea::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .dark textarea::-webkit-scrollbar-thumb { background: #4b5563; }
         
         .loader {
             border: 4px solid #f3f3f3;
             border-top: 4px solid #3498db;
             border-radius: 50%;
-            width: 30px;
-            height: 30px;
+            width: 20px;
+            height: 20px;
             animation: spin 1s linear infinite;
             display: none;
         }
@@ -81,130 +96,147 @@
             100% { transform: rotate(360deg); }
         }
         
-        /* Range input styling improvements */
-        input[type=range] {
-            accent-color: #2563eb; 
-        }
+        input[type=range] { accent-color: #2563eb; }
     </style>
 </head>
-<body class="min-h-screen flex flex-col md:flex-row">
+<body class="min-h-screen flex flex-col md:flex-row bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-100 transition-colors duration-200">
 
     <!-- Controls Panel -->
-    <div class="w-full md:w-1/2 lg:w-2/5 p-6 bg-white overflow-y-auto h-screen shadow-xl z-10 flex flex-col gap-6">
-        <div>
-            <h1 class="text-3xl font-bold text-gray-800 mb-2">Odia Story Maker</h1>
-            <p class="text-gray-500 text-sm">Create stunning 9:16 status images.</p>
+    <div class="w-full md:w-1/2 lg:w-2/5 p-6 bg-white dark:bg-gray-800 overflow-y-auto h-screen shadow-xl z-20 flex flex-col gap-6 border-r border-gray-200 dark:border-gray-700">
+        
+        <!-- Header: Toggle & Title removed as requested, just tools now -->
+        <div class="flex justify-end">
+            <button id="theme-toggle" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                <!-- Sun Icon -->
+                <svg id="sun-icon" class="w-6 h-6 text-yellow-500 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                <!-- Moon Icon -->
+                <svg id="moon-icon" class="w-6 h-6 text-gray-500 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 24.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+            </button>
         </div>
 
-        <!-- Image Upload -->
-        <div class="space-y-2">
-            <label class="block text-sm font-medium text-gray-700">1. Background Image</label>
+        <!-- Image Upload & Control -->
+        <div class="space-y-3 p-4 bg-gray-50 dark:bg-gray-700 rounded-xl border border-gray-200 dark:border-gray-600">
+            <label class="block text-sm font-bold text-gray-700 dark:text-gray-200">1. Background Image</label>
             <input type="file" id="bg-upload" accept="image/*" 
-                class="block w-full text-sm text-gray-500
+                class="block w-full text-sm text-gray-500 dark:text-gray-300
                 file:mr-4 file:py-2 file:px-4
                 file:rounded-full file:border-0
                 file:text-sm file:font-semibold
-                file:bg-blue-50 file:text-blue-700
-                hover:file:bg-blue-100 cursor-pointer border border-gray-300 rounded-lg p-1"
+                file:bg-blue-50 file:text-blue-700 dark:file:bg-blue-900 dark:file:text-blue-200
+                hover:file:bg-blue-100 dark:hover:file:bg-blue-800 cursor-pointer border border-gray-300 dark:border-gray-500 rounded-lg p-1 bg-white dark:bg-gray-800"
             >
+            <div>
+                <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1 flex justify-between">
+                    <span>Resize (Zoom)</span>
+                    <span class="text-xs italic">Drag image on preview to move</span>
+                </label>
+                <input type="range" id="bg-scale" min="0.5" max="3.0" step="0.05" value="1.0" class="w-full h-2 bg-gray-200 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer">
+            </div>
         </div>
 
         <!-- Text Inputs -->
         <div class="space-y-4">
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">2. Header Text (Odia)</label>
-                <input type="text" id="input-header" placeholder="Enter Header..." class="odia-font w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" value="ଜୀବନରେ ସଫଳ ହେବାକୁ ହେଲେ ୫ଟି ଟି ବାକ୍ୟ ମନେ ରଖ">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">2. Header Text</label>
+                <input type="text" id="input-header" placeholder="Enter Header..." class="odia-font w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 dark:text-white outline-none" value="ଖୁସି ରହିବା ପାଇଁ ୨ଟି ଜିନିଷ ଜରୁରୀ">
             </div>
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">3. Body Text (Odia)</label>
-                <textarea id="input-body" rows="6" placeholder="Enter body text..." class="odia-font w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-☘️ ମୋ ପାଖରେ ସମୟ ନାହିଁ 
-☘️ ମୋ ଦ୍ୱାରା ହେବ ନାହିଁ
-☘️ ମୋର ମୁଡ଼ ନାହିଁ 
-☘️ ମୋ ଭାଗ୍ୟ ଖରାପ
-☘️ ଲୋକ କଣ କହିବେ?</textarea>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">3. Body Text</label>
+                <textarea id="input-body" rows="6" placeholder="Enter body text..." class="odia-font w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 dark:text-white outline-none">☘️ ବୁଝିବା ଆଉ ବୁଝେଇବାର ଶକ୍ତି ।
+
+☘️ ସହିବାର ଓ ଶୁଣିବାର ଶକ୍ତି ।</textarea>
             </div>
         </div>
 
         <!-- Styling Controls -->
-        <div class="space-y-6 border-t pt-4">
+        <div class="space-y-6">
             
             <!-- Header Styling Group -->
-            <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                <h3 class="font-semibold text-gray-700 mb-3 text-sm uppercase tracking-wide">Header Styling</h3>
+            <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg border border-gray-200 dark:border-gray-600">
+                <h3 class="font-semibold text-gray-700 dark:text-gray-200 mb-3 text-sm uppercase tracking-wide">Header Styling</h3>
                 
                 <div class="grid grid-cols-2 gap-4 mb-4">
                     <div>
-                        <label class="block text-xs font-medium text-gray-600 mb-1">Size</label>
-                        <input type="range" id="size-header" min="16" max="60" value="28" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                        <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Size</label>
+                        <input type="range" id="size-header" min="16" max="60" value="28" class="w-full h-2 bg-gray-200 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer">
                     </div>
                     <div>
-                        <label class="block text-xs font-medium text-gray-600 mb-1">Line Spacing</label>
-                        <input type="range" id="line-height-header" min="0.8" max="2.0" step="0.1" value="1.2" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                        <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Line Spacing</label>
+                        <input type="range" id="line-height-header" min="0.8" max="2.0" step="0.1" value="1.2" class="w-full h-2 bg-gray-200 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer">
                     </div>
+                </div>
+
+                <div class="mb-4">
+                     <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Character Spacing</label>
+                     <input type="range" id="char-spacing-header" min="-2" max="10" step="0.5" value="0" class="w-full h-2 bg-gray-200 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer">
                 </div>
 
                 <div class="flex items-center justify-between">
                     <div>
-                        <label class="block text-xs font-medium text-gray-600 mb-1">Color</label>
+                        <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Color</label>
                         <div class="flex gap-2">
-                            <button onclick="setHeaderColor('#1e40af')" class="w-6 h-6 rounded-full bg-blue-800 border ring-1 ring-offset-1 ring-transparent hover:ring-blue-400"></button>
-                            <button onclick="setHeaderColor('#dc2626')" class="w-6 h-6 rounded-full bg-red-600 border ring-1 ring-offset-1 ring-transparent hover:ring-red-400"></button>
-                            <button onclick="setHeaderColor('#000000')" class="w-6 h-6 rounded-full bg-black border ring-1 ring-offset-1 ring-transparent hover:ring-gray-400"></button>
-                            <input type="color" id="color-header-picker" class="w-6 h-6 p-0 border-0 rounded-full overflow-hidden cursor-pointer" value="#1e40af">
+                            <button onclick="setHeaderColor('#1e40af')" class="w-6 h-6 rounded-full bg-blue-800 border dark:border-gray-500 ring-1 ring-offset-1 ring-transparent hover:ring-blue-400"></button>
+                            <button onclick="setHeaderColor('#dc2626')" class="w-6 h-6 rounded-full bg-red-600 border dark:border-gray-500 ring-1 ring-offset-1 ring-transparent hover:ring-red-400"></button>
+                            <button onclick="setHeaderColor('#000000')" class="w-6 h-6 rounded-full bg-black border dark:border-gray-500 ring-1 ring-offset-1 ring-transparent hover:ring-gray-400"></button>
+                            <input type="color" id="color-header-picker" class="w-6 h-6 p-0 border-0 rounded-full overflow-hidden cursor-pointer bg-transparent" value="#1e40af">
                         </div>
                     </div>
                     <div>
-                         <label class="block text-xs font-medium text-gray-600 mb-1">Alignment</label>
+                         <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Alignment</label>
                          <div class="flex rounded-md shadow-sm" role="group">
-                            <button type="button" onclick="setHeaderAlign('left')" class="px-2 py-1 text-xs font-medium text-gray-900 bg-white border border-gray-200 rounded-l-lg hover:bg-gray-100 focus:z-10 focus:ring-2 focus:ring-blue-700 focus:text-blue-700">L</button>
-                            <button type="button" onclick="setHeaderAlign('center')" class="px-2 py-1 text-xs font-medium text-gray-900 bg-white border-t border-b border-gray-200 hover:bg-gray-100 focus:z-10 focus:ring-2 focus:ring-blue-700 focus:text-blue-700">C</button>
-                            <button type="button" onclick="setHeaderAlign('right')" class="px-2 py-1 text-xs font-medium text-gray-900 bg-white border border-gray-200 rounded-r-lg hover:bg-gray-100 focus:z-10 focus:ring-2 focus:ring-blue-700 focus:text-blue-700">R</button>
+                            <button type="button" onclick="setHeaderAlign('left')" class="px-2 py-1 text-xs font-medium text-gray-900 dark:text-white bg-white dark:bg-gray-600 border border-gray-200 dark:border-gray-500 rounded-l-lg hover:bg-gray-100 dark:hover:bg-gray-500">L</button>
+                            <button type="button" onclick="setHeaderAlign('center')" class="px-2 py-1 text-xs font-medium text-gray-900 dark:text-white bg-white dark:bg-gray-600 border-t border-b border-gray-200 dark:border-gray-500 hover:bg-gray-100 dark:hover:bg-gray-500">C</button>
+                            <button type="button" onclick="setHeaderAlign('right')" class="px-2 py-1 text-xs font-medium text-gray-900 dark:text-white bg-white dark:bg-gray-600 border border-gray-200 dark:border-gray-500 rounded-r-lg hover:bg-gray-100 dark:hover:bg-gray-500">R</button>
                         </div>
                     </div>
                 </div>
             </div>
 
             <!-- Body Styling Group -->
-            <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                <h3 class="font-semibold text-gray-700 mb-3 text-sm uppercase tracking-wide">Body Styling</h3>
+            <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg border border-gray-200 dark:border-gray-600">
+                <h3 class="font-semibold text-gray-700 dark:text-gray-200 mb-3 text-sm uppercase tracking-wide">Body Styling</h3>
                 
                 <div class="grid grid-cols-2 gap-4 mb-4">
                     <div>
-                        <label class="block text-xs font-medium text-gray-600 mb-1">Size</label>
-                        <input type="range" id="size-body" min="10" max="40" value="16" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                        <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Size</label>
+                        <input type="range" id="size-body" min="10" max="40" value="16" class="w-full h-2 bg-gray-200 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer">
                     </div>
                     <div>
-                         <label class="block text-xs font-medium text-gray-600 mb-1">Line Spacing</label>
-                         <input type="range" id="line-height-body" min="1.0" max="3.0" step="0.1" value="1.6" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                         <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Line Spacing</label>
+                         <input type="range" id="line-height-body" min="1.0" max="3.0" step="0.1" value="1.6" class="w-full h-2 bg-gray-200 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer">
                     </div>
+                </div>
+
+                <div class="mb-4">
+                     <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Character Spacing</label>
+                     <input type="range" id="char-spacing-body" min="-2" max="10" step="0.5" value="0" class="w-full h-2 bg-gray-200 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer">
                 </div>
 
                 <div class="flex items-center justify-between">
                      <div>
-                        <label class="block text-xs font-medium text-gray-600 mb-1">Color</label>
+                        <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Color</label>
                         <div class="flex gap-2">
-                            <button onclick="setBodyColor('#000000')" class="w-6 h-6 rounded-full bg-black border ring-1 ring-offset-1 ring-transparent hover:ring-gray-400"></button>
-                            <button onclick="setBodyColor('#374151')" class="w-6 h-6 rounded-full bg-gray-700 border ring-1 ring-offset-1 ring-transparent hover:ring-gray-400"></button>
-                            <button onclick="setBodyColor('#1e3a8a')" class="w-6 h-6 rounded-full bg-blue-900 border ring-1 ring-offset-1 ring-transparent hover:ring-blue-400"></button>
-                            <input type="color" id="color-body-picker" class="w-6 h-6 p-0 border-0 rounded-full overflow-hidden cursor-pointer" value="#000000">
+                            <button onclick="setBodyColor('#000000')" class="w-6 h-6 rounded-full bg-black border dark:border-gray-500 ring-1 ring-offset-1 ring-transparent hover:ring-gray-400"></button>
+                            <button onclick="setBodyColor('#374151')" class="w-6 h-6 rounded-full bg-gray-700 border dark:border-gray-500 ring-1 ring-offset-1 ring-transparent hover:ring-gray-400"></button>
+                            <button onclick="setBodyColor('#1e3a8a')" class="w-6 h-6 rounded-full bg-blue-900 border dark:border-gray-500 ring-1 ring-offset-1 ring-transparent hover:ring-blue-400"></button>
+                            <input type="color" id="color-body-picker" class="w-6 h-6 p-0 border-0 rounded-full overflow-hidden cursor-pointer bg-transparent" value="#000000">
                         </div>
                     </div>
                     <div>
-                         <label class="block text-xs font-medium text-gray-600 mb-1">Alignment</label>
+                         <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Alignment</label>
                          <div class="flex rounded-md shadow-sm" role="group">
-                            <button type="button" onclick="setBodyAlign('left')" class="px-2 py-1 text-xs font-medium text-gray-900 bg-white border border-gray-200 rounded-l-lg hover:bg-gray-100 focus:z-10 focus:ring-2 focus:ring-blue-700 focus:text-blue-700">L</button>
-                            <button type="button" onclick="setBodyAlign('center')" class="px-2 py-1 text-xs font-medium text-gray-900 bg-white border-t border-b border-gray-200 hover:bg-gray-100 focus:z-10 focus:ring-2 focus:ring-blue-700 focus:text-blue-700">C</button>
-                            <button type="button" onclick="setBodyAlign('right')" class="px-2 py-1 text-xs font-medium text-gray-900 bg-white border border-gray-200 rounded-r-lg hover:bg-gray-100 focus:z-10 focus:ring-2 focus:ring-blue-700 focus:text-blue-700">R</button>
+                            <button type="button" onclick="setBodyAlign('left')" class="px-2 py-1 text-xs font-medium text-gray-900 dark:text-white bg-white dark:bg-gray-600 border border-gray-200 dark:border-gray-500 rounded-l-lg hover:bg-gray-100 dark:hover:bg-gray-500">L</button>
+                            <button type="button" onclick="setBodyAlign('center')" class="px-2 py-1 text-xs font-medium text-gray-900 dark:text-white bg-white dark:bg-gray-600 border-t border-b border-gray-200 dark:border-gray-500 hover:bg-gray-100 dark:hover:bg-gray-500">C</button>
+                            <button type="button" onclick="setBodyAlign('right')" class="px-2 py-1 text-xs font-medium text-gray-900 dark:text-white bg-white dark:bg-gray-600 border border-gray-200 dark:border-gray-500 rounded-r-lg hover:bg-gray-100 dark:hover:bg-gray-500">R</button>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Position Slider (Alternative to drag) -->
+            <!-- Position Slider -->
             <div>
-                 <label class="block text-xs font-medium text-gray-600 mb-1">Vertical Position (Or drag the box)</label>
-                 <input type="range" id="pos-y" min="0" max="80" value="20" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                 <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Text Box Vertical Position</label>
+                 <input type="range" id="pos-y" min="0" max="80" value="20" class="w-full h-2 bg-gray-200 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer">
             </div>
 
         </div>
@@ -216,31 +248,46 @@
     </div>
 
     <!-- Preview Panel -->
-    <div class="w-full md:w-1/2 lg:w-3/5 bg-gray-100 flex items-center justify-center p-8 overflow-hidden h-screen">
+    <div class="w-full md:w-1/2 lg:w-3/5 bg-gray-100 dark:bg-gray-900 flex items-center justify-center p-8 overflow-hidden h-screen transition-colors duration-200">
         
-        <div class="phone-preview-container">
-            <div id="render-target" style="background-image: url('https://placehold.co/1080x1920/222/FFF?text=Upload+Image');">
+        <div class="phone-preview-container border-4 border-gray-300 dark:border-gray-700 rounded-xl">
+            <!-- This is the container we render to canvas -->
+            <div id="render-target" class="w-full h-full relative bg-gray-800">
+                
+                <!-- Background Image Wrapper -->
+                <div id="bg-wrapper">
+                    <img id="bg-image" src="https://placehold.co/1080x1920/222/FFF?text=Drop+Image" alt="Background">
+                </div>
+
                 <!-- Draggable Text Box -->
                 <div id="text-box">
                     <h2 id="preview-header" class="odia-font font-bold mb-4 leading-tight text-center" style="color: #1e40af; font-size: 28px; line-height: 1.2;">
-                        ଜୀବନରେ ସଫଳ ହେବାକୁ ହେଲେ ୫ଟି ଟି ବାକ୍ୟ ମନେ ରଖ
+                        ଖୁସି ରହିବା ପାଇଁ ୨ଟି ଜିନିଷ ଜରୁରୀ
                     </h2>
                     <div id="preview-body" class="odia-font font-bold" style="color: #000000; font-size: 16px; line-height: 1.6; text-align: left;">
-                        ☘️ ମୋ ପାଖରେ ସମୟ ନାହିଁ 
-                        ☘️ ମୋ ଦ୍ୱାରା ହେବ ନାହିଁ
-                        ☘️ ମୋର ମୁଡ଼ ନାହିଁ
-                        ☘️ ମୋ ଭାଗ୍ୟ ଖରାପ 
-                        ☘️ ଲୋକ କଣ କହିବେ?
+                        ☘️ ବୁଝିବା ଆଉ ବୁଝେଇବାର ଶକ୍ତି ।
+                        <br><br>
+                        ☘️ ସହିବାର ଓ ଶୁଣିବାର ଶକ୍ତି ।
                     </div>
                 </div>
+
             </div>
         </div>
 
     </div>
 
     <script>
-        // DOM Elements
+        // --- 1. DOM Elements ---
+        const themeToggle = document.getElementById('theme-toggle');
+        const sunIcon = document.getElementById('sun-icon');
+        const moonIcon = document.getElementById('moon-icon');
+        const htmlElement = document.documentElement;
+
         const bgUpload = document.getElementById('bg-upload');
+        const bgScaleSlider = document.getElementById('bg-scale');
+        const bgImage = document.getElementById('bg-image');
+        const bgWrapper = document.getElementById('bg-wrapper');
+        
         const renderTarget = document.getElementById('render-target');
         const textBox = document.getElementById('text-box');
         
@@ -249,101 +296,178 @@
         const previewHeader = document.getElementById('preview-header');
         const previewBody = document.getElementById('preview-body');
         
-        // Header Controls
+        // Controls
         const sizeHeader = document.getElementById('size-header');
         const lineHeightHeader = document.getElementById('line-height-header');
+        const charSpacingHeader = document.getElementById('char-spacing-header');
         const colorHeaderPicker = document.getElementById('color-header-picker');
         
-        // Body Controls
         const sizeBody = document.getElementById('size-body');
         const lineHeightBody = document.getElementById('line-height-body');
+        const charSpacingBody = document.getElementById('char-spacing-body');
         const colorBodyPicker = document.getElementById('color-body-picker');
         
         const posY = document.getElementById('pos-y');
         const downloadBtn = document.getElementById('download-btn');
         const loader = document.getElementById('loader');
 
-        // State
-        let isDragging = false;
-        let startY;
-        let startTop;
+        // --- 2. Theme Toggle ---
+        function toggleTheme() {
+            if (htmlElement.classList.contains('dark')) {
+                htmlElement.classList.remove('dark');
+                htmlElement.classList.add('light');
+                sunIcon.classList.add('hidden');
+                moonIcon.classList.remove('hidden');
+            } else {
+                htmlElement.classList.add('dark');
+                htmlElement.classList.remove('light');
+                moonIcon.classList.add('hidden');
+                sunIcon.classList.remove('hidden');
+            }
+        }
+        themeToggle.addEventListener('click', toggleTheme);
 
-        // 1. Handle Text Updates
+        // --- 3. Text Updates ---
         inputHeader.addEventListener('input', (e) => {
             previewHeader.innerText = e.target.value;
         });
 
         inputBody.addEventListener('input', (e) => {
-            // Replace newlines with <br> for HTML rendering
             previewBody.innerHTML = e.target.value.replace(/\n/g, '<br>');
         });
 
-        // 2. Handle Image Upload
+        // --- 4. Styling (Size, Height, Spacing) ---
+        // Header
+        sizeHeader.addEventListener('input', (e) => previewHeader.style.fontSize = `${e.target.value}px`);
+        lineHeightHeader.addEventListener('input', (e) => previewHeader.style.lineHeight = e.target.value);
+        charSpacingHeader.addEventListener('input', (e) => previewHeader.style.letterSpacing = `${e.target.value}px`);
+        
+        // Body
+        sizeBody.addEventListener('input', (e) => previewBody.style.fontSize = `${e.target.value}px`);
+        lineHeightBody.addEventListener('input', (e) => previewBody.style.lineHeight = e.target.value);
+        charSpacingBody.addEventListener('input', (e) => previewBody.style.letterSpacing = `${e.target.value}px`);
+
+        // Colors & Align
+        function setHeaderColor(c) { previewHeader.style.color = c; colorHeaderPicker.value = c; }
+        function setBodyColor(c) { previewBody.style.color = c; colorBodyPicker.value = c; }
+        function setHeaderAlign(a) { previewHeader.style.textAlign = a; }
+        function setBodyAlign(a) { previewBody.style.textAlign = a; }
+
+        colorHeaderPicker.addEventListener('input', (e) => previewHeader.style.color = e.target.value);
+        colorBodyPicker.addEventListener('input', (e) => previewBody.style.color = e.target.value);
+
+        // --- 5. Text Box Position ---
+        // Updates vertical position
+        posY.addEventListener('input', (e) => textBox.style.top = `${e.target.value}%`);
+
+
+        // --- 6. Background Image Logic ---
+        
+        // Upload
         bgUpload.addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (file) {
                 const reader = new FileReader();
                 reader.onload = function(event) {
-                    renderTarget.style.backgroundImage = `url(${event.target.result})`;
+                    bgImage.src = event.target.result;
+                    // Reset scale and pos on new image
+                    bgScaleVal = 1;
+                    bgPosX = 0;
+                    bgPosY = 0;
+                    bgScaleSlider.value = 1;
+                    updateBgTransform();
                 }
                 reader.readAsDataURL(file);
             }
         });
 
-        // 3. Handle Styling (Size & Line Height)
-        sizeHeader.addEventListener('input', (e) => {
-            previewHeader.style.fontSize = `${e.target.value}px`;
-        });
-        
-        lineHeightHeader.addEventListener('input', (e) => {
-            previewHeader.style.lineHeight = e.target.value;
+        // Background State
+        let bgScaleVal = 1;
+        let bgPosX = 0;
+        let bgPosY = 0;
+        let isDraggingBg = false;
+        let bgStartX, bgStartY;
+
+        // Scale Slider
+        bgScaleSlider.addEventListener('input', (e) => {
+            bgScaleVal = parseFloat(e.target.value);
+            updateBgTransform();
         });
 
-        sizeBody.addEventListener('input', (e) => {
-            previewBody.style.fontSize = `${e.target.value}px`;
-        });
-        
-        lineHeightBody.addEventListener('input', (e) => {
-            previewBody.style.lineHeight = e.target.value;
-        });
+        // Background Dragging
+        // We attach listeners to the wrapper to capture drags on the image
+        bgWrapper.addEventListener('mousedown', startBgDrag);
+        bgWrapper.addEventListener('touchstart', startBgDrag, {passive: false});
 
-        // 4. Handle Position Slider
-        posY.addEventListener('input', (e) => {
-            textBox.style.top = `${e.target.value}%`;
-        });
-
-        // 5. Handle Colors & Alignment
-        function setHeaderColor(color) {
-            previewHeader.style.color = color;
-            colorHeaderPicker.value = color;
+        function startBgDrag(e) {
+            // Only drag if clicking background, not if bubbling from text box
+            if (e.target.closest('#text-box')) return;
+            
+            e.preventDefault();
+            isDraggingBg = true;
+            
+            const clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
+            const clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
+            
+            // Record initial mouse pos relative to current image offset
+            bgStartX = clientX - bgPosX;
+            bgStartY = clientY - bgPosY;
+            
+            document.addEventListener('mousemove', dragBg);
+            document.addEventListener('touchmove', dragBg, {passive: false});
+            document.addEventListener('mouseup', stopBgDrag);
+            document.addEventListener('touchend', stopBgDrag);
+            
+            bgWrapper.style.cursor = 'grabbing';
+            bgImage.style.cursor = 'grabbing';
         }
-        
-        function setBodyColor(color) {
-            previewBody.style.color = color;
-            colorBodyPicker.value = color;
+
+        function dragBg(e) {
+            if (!isDraggingBg) return;
+            e.preventDefault();
+            
+            const clientX = e.type.includes('touch') ? e.touches[0].clientX : e.clientX;
+            const clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
+            
+            bgPosX = clientX - bgStartX;
+            bgPosY = clientY - bgStartY;
+            
+            updateBgTransform();
         }
-        
-        function setHeaderAlign(align) {
-            previewHeader.style.textAlign = align;
+
+        function stopBgDrag() {
+            isDraggingBg = false;
+            document.removeEventListener('mousemove', dragBg);
+            document.removeEventListener('touchmove', dragBg);
+            document.removeEventListener('mouseup', stopBgDrag);
+            document.removeEventListener('touchend', stopBgDrag);
+            bgWrapper.style.cursor = 'default';
+            bgImage.style.cursor = 'move';
         }
 
-        function setBodyAlign(align) {
-            previewBody.style.textAlign = align;
+        function updateBgTransform() {
+            // Translate is from center (-50%, -50%) plus our offset
+            // We use calc in string or just logical pixels. 
+            // Note: Transform order matters.
+            // We want to move it relative to the visual viewport.
+            // Since we centered it with top:50%/left:50% and translate(-50%,-50%),
+            // Adding px translation works on top of that.
+            bgImage.style.transform = `translate(calc(-50% + ${bgPosX}px), calc(-50% + ${bgPosY}px)) scale(${bgScaleVal})`;
         }
 
-        colorHeaderPicker.addEventListener('input', (e) => {
-            previewHeader.style.color = e.target.value;
-        });
 
-        colorBodyPicker.addEventListener('input', (e) => {
-            previewBody.style.color = e.target.value;
-        });
-
-        // 6. Drag and Drop Logic for Text Box
+        // --- 7. Text Box Dragging Logic (Existing) ---
         textBox.addEventListener('mousedown', startDrag);
         textBox.addEventListener('touchstart', startDrag, {passive: false});
 
+        let isDragging = false;
+        let startY;
+        let startTop;
+
         function startDrag(e) {
+            // Stop propagation so we don't drag background
+            e.stopPropagation(); 
+            
             isDragging = true;
             const clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
             startY = clientY;
@@ -357,22 +481,19 @@
 
         function drag(e) {
             if (!isDragging) return;
-            e.preventDefault(); // Prevent scrolling on touch
-            
+            e.preventDefault();
             const clientY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
             const deltaY = clientY - startY;
             
-            // Calculate new top as percentage to remain responsive
             const parentHeight = renderTarget.offsetHeight;
             let newTopPx = startTop + deltaY;
             let newTopPercent = (newTopPx / parentHeight) * 100;
 
-            // Constraints (keep inside box somewhat)
             if (newTopPercent < 0) newTopPercent = 0;
             if (newTopPercent > 80) newTopPercent = 80;
 
             textBox.style.top = `${newTopPercent}%`;
-            posY.value = newTopPercent; // Sync slider
+            posY.value = newTopPercent;
         }
 
         function stopDrag() {
@@ -383,42 +504,43 @@
             document.removeEventListener('touchend', stopDrag);
         }
 
-        // 7. Download Function
+
+        // --- 8. Download Function ---
         downloadBtn.addEventListener('click', () => {
-            // Show loader
             const btnText = downloadBtn.querySelector('span');
             btnText.textContent = "Generating...";
             loader.style.display = "block";
 
-            // We need to capture the #render-target
-            // We scale it up to create an HD image (1080px width)
-            // The preview container is roughly 360px wide. 
-            // So we need a scale factor of 3 (360 * 3 = 1080).
             const element = document.getElementById('render-target');
             
-            // Calculate scale based on actual current width of preview
+            // Dynamic resolution scaling
             const currentWidth = element.offsetWidth;
             const targetWidth = 1080; 
             const scaleFactor = targetWidth / currentWidth;
 
+            // Generate Filename from header
+            let filename = inputHeader.value.trim();
+            // Remove special characters that might be invalid in filenames
+            filename = filename.replace(/[^a-z0-9\u0B00-\u0B7F\s\-_]/gi, '').replace(/\s+/g, '_');
+            if(!filename) filename = "odia-story";
+
             html2canvas(element, {
                 scale: scaleFactor,
-                useCORS: true, // Important if using cross-origin images (though we use file reader mostly)
-                backgroundColor: null, // Transparent bg if image fails
-                logging: false
+                useCORS: true, 
+                backgroundColor: null,
+                logging: false,
+                allowTaint: true 
             }).then(canvas => {
-                // Create link and download
                 const link = document.createElement('a');
-                link.download = `odia-story-${Date.now()}.png`;
+                link.download = `${filename}.png`;
                 link.href = canvas.toDataURL('image/png');
                 link.click();
                 
-                // Reset button
                 btnText.textContent = "Download HD Image";
                 loader.style.display = "none";
             }).catch(err => {
                 console.error(err);
-                alert("Error generating image. Please try again.");
+                alert("Error generating image.");
                 btnText.textContent = "Download HD Image";
                 loader.style.display = "none";
             });
